@@ -1,4 +1,4 @@
-# SI<sup>(n)<\sup>R Covid Dissertation
+# SI<sup>(n)</sup>R Covid Dissertation
 
 ### About:
 about information
