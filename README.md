@@ -1,4 +1,4 @@
-# SI(n)R Covid Dissertation
+# SI$^(n)$R Covid Dissertation
 
 ### About:
 about information
