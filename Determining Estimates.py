@@ -28,9 +28,6 @@ from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 from matplotlib.offsetbox import AnchoredText
 
-#import warnings
-#warnings.filterwarnings("ignore")
-
 
 # <br><br>
 # 
