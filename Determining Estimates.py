@@ -3,7 +3,7 @@
 
 # # Decreasing Computational Time 
 #  
-# The code below examines the transmission rate results for the gamma, lognormal, and weibull distributions of generation intervals. Each of these three distributions were modeled from a population mean of $\bar{x}=4.9$ and standard deviation of $\sigma=2.0$. In the outputs, we can visualize the type of results that were initially retuned with estimates of $w_j = \frac{1}{n}$ $\forall$ $j \in 1,...,n$ and $\lambda=n\sigma$ where $\sigma=\frac{1}{15}$. To see a more indepth explanation and analysis of the entire study, please see the thesis paper located in the GitHub repository. 
+# The code below examines the transmission rate results for the gamma, lognormal, and weibull distributions of generation intervals. Each of these three distributions were modeled from a population mean of $\bar{x}=4.9$ and standard deviation of $\sigma=2.0$. In the outputs, we can visualize the type of results that were initially retuned with estimates of $w_j = \frac{1}{n}$ $\forall$ $j \in 1,...,n$ and $\lambda=n\sigma$ where $\sigma=\frac{1}{14}$. To see a more indepth explanation and analysis of the entire study, please see the thesis paper located in the GitHub repository. 
 # 
 # ---
 # 
@@ -61,7 +61,7 @@ lognorm_df = gi_df[gi_df["Dist_Type"]=="lognormal"]
 # 
 # #### Step 3: Create Functions to Estimate the Tranmission Rates
 # 
-# To see full explanation of the code, please see Section {} of the thesis. 
+# To see full explanation of the code, please see Section 3 of the thesis. 
 
 # In[3]:
 
@@ -135,7 +135,7 @@ def solver(tau, R_0, n):
     for i in range(n):
         wl_0[i] = 1/n
     
-    wl_0[-1]= n/15
+    wl_0[-1]= n/14
     
     b = (0, 1)
     bnds=()
@@ -150,7 +150,7 @@ def solver(tau, R_0, n):
     cons = ([con1])
     
     #optimize
-    solution = minimize(objective, wl_0, method='SLSQP',                        args=(tau), bounds=bnds,constraints=cons)
+    solution = minimize(objective, wl_0, method='SLSQP', args=(tau), bounds=bnds,constraints=cons)
 
     #get weights
     w_val = solution.x[:-1]
@@ -167,13 +167,21 @@ def solutions(gi_data,min_n, max_n, R_0):
     weight = []
     lambda_n = []
     beta = []
+    obj = []
     
     for n_val in list(range(min_n, max_n+1)):   
+        
+        if n_val == min_n: 
+            str_p = "Solving: with R_0="+str(R_0)+" for n in "+ str(min_n)+",...,"+str(max_n)
+            print(str_p)
+            
+            
         w, l, b = solver(gi_data, R_0, n_val)
+        o = objective(list(w)+[l],gi_data)
         
         #Update on status of run
         if n_val == int((max_n+1-min_n)/4+min_n): 
-            print("n=",str(n_val)," is done.25% Done!")
+            print("n=",str(n_val)," is done. 25% Done!")
             
         if n_val == int((max_n+1-min_n)/2+min_n): 
             print("n=",str(n_val)," is done. Half way there!")
@@ -187,8 +195,9 @@ def solutions(gi_data,min_n, max_n, R_0):
         weight.append(w)
         lambda_n.append(l)
         beta.append(b)
+        obj.append(o)
     
-    return weight, lambda_n, beta
+    return weight, lambda_n, beta, obj
 
 
 #=================== BETAS(u) ====================
@@ -363,7 +372,7 @@ ax.lines[0].set_color('black')
 
 
 R0 = 2.3
-w_gamma, l_gamma, b_gamma = solutions(gi_gamma_obs, 1, 25, R0)
+w_gamma, l_gamma, b_gamma, o_gamma = solutions(gi_gamma_obs, 1, 25, R0)
 
 
 # In[8]:
@@ -397,9 +406,9 @@ gamma_fig.show()
 # In[9]:
 
 
-for w, l in zip(w_gamma,l_gamma):
+for w, l, o in zip(w_gamma,l_gamma, o_gamma):
     print("n=",str(len(w)))
-    print("Obj: ",str(round(objective(list(w)+[l],gi_gamma_obs),1)),          "        lambda:", str(round(l,2)))
+    print("Obj: ",str(round(o,1)),          "        lambda:", str(round(l,2)))
     print("weights", str([round(val,2) for val in w]), "\n")
 
 
@@ -418,9 +427,9 @@ for w, l in zip(w_gamma,l_gamma):
 act_norm_mean = np.log(np.mean(gi_lognorm_obs))-0.5*np.log((np.std(gi_lognorm_obs)/np.mean(gi_lognorm_obs))**2+1)
 act_norm_std = np.sqrt(np.log((np.std(gi_lognorm_obs)/np.mean(gi_lognorm_obs))**2+1))
 
-print("Simulated from: Lognormal(mean=", str(round(log_mean,3)),", std=", str(round(log_sd,3)),")",      "       where Normal(mean=", str(round(norm_mean,3)), ", std=", str(round(norm_sd,3)),")", sep="")
+print("Simulated from: Lognormal(mean=", str(round(log_mean,3)),", std=", str(round(log_sd,3)),")", "       where Normal(mean=", str(round(norm_mean,3)), ", std=", str(round(norm_sd,3)),")", sep="")
 
-print("Actual:         Lognormal(mean=", str(round(np.mean(gi_lognorm_obs),3)), ", std=", str(round(np.std(gi_lognorm_obs),3)),")",      "     where Normal(mean=", str(round(act_norm_mean,3)), ", std=", str(round(act_norm_std,3)),")", sep="")
+print("Actual:         Lognormal(mean=", str(round(np.mean(gi_lognorm_obs),3)), ", std=", str(round(np.std(gi_lognorm_obs),3)),")", "     where Normal(mean=", str(round(act_norm_mean,3)), ", std=", str(round(act_norm_std,3)),")", sep="")
 
 
 plt.figure(figsize = (10,5))
@@ -434,7 +443,7 @@ ax.lines[0].set_color('black')
 
 
 R0 = 2.3
-w_log, l_log, b_log = solutions(gi_lognorm_obs, 1, 25, R0)
+w_log, l_log, b_log, o_log = solutions(gi_lognorm_obs, 1, 25, R0)
 
 
 # In[12]:
@@ -463,13 +472,13 @@ lognorm_fig.update_layout(
 )
 lognorm_fig.show()
 
-
+a
 # In[13]:
 
 
-for w, l in zip(w_log,l_log):
+for w, l,o in zip(w_log,l_log,o_log):
     print("n=",str(len(w)))
-    print("Obj: ",str(round(objective(list(w)+[l],gi_lognorm_obs),1)),          "        lambda:", str(round(l,2)))
+    print("Obj: ",str(round(o,1)),          "        lambda:", str(round(l,2)))
     print("weights", str([round(val,2) for val in w]), "\n")
 
 
@@ -488,7 +497,7 @@ print("Simulated from: Weibull(shape=", str(round(weibull_shape,3)),
 
 act_weibull_shape = (np.std(gi_weibull_obs)/np.mean(gi_weibull_obs))**(-1.086) 
 act_weibull_scale = np.mean(gi_weibull_obs)/math.gamma(1+1/act_weibull_shape)
-print("Actual:         Weibull(shape=", str(round(act_weibull_shape,3)),      ", scale=", str(round(act_weibull_scale,3)),")     where mean=",      str(round(np.mean(gi_weibull_obs),3))," and  std=", str(round(np.std(gi_weibull_obs),3)),sep="")
+print("Actual:         Weibull(shape=", str(round(act_weibull_shape,3)),      ", scale=", str(round(act_weibull_scale,3)),")     where mean=", str(round(np.mean(gi_weibull_obs),3))," and  std=", str(round(np.std(gi_weibull_obs),3)),sep="")
 
 #visualize
 plt.figure(figsize = (10,5))
@@ -502,7 +511,7 @@ ax.lines[0].set_color('black')
 
 
 R0 = 2.3
-w_weibull, l_weibull, b_weibull = solutions(gi_weibull_obs, 1, 25, R0)
+w_weibull, l_weibull, b_weibull, o_weibull = solutions(gi_weibull_obs, 1, 25, R0)
 
 
 # In[16]:
@@ -535,8 +544,187 @@ weibull_fig.show()
 # In[17]:
 
 
-for w, l in zip(w_weibull,l_weibull):
+for w, l, o in zip(w_weibull,l_weibull, o_weibull):
     print("n=",str(len(w)))
-    print("Obj: ",str(round(objective(list(w)+[l],gi_weibull_obs),1)),          "        lambda:", str(round(l,2)))
+    print("Obj: ",str(round(o,1)),          "        lambda:", str(round(l,2)))
     print("weights", str([round(val,2) for val in w]), "\n")
+
+
+# <br><br>
+# 
+# 
+# ##### Comparisons between above results and math
+
+# In[ ]:
+
+
+print("gamma")
+print("shape=", (np.mean(gi_gamma_obs)**2)/np.var(gi_gamma_obs))
+print(((np.mean(gi_gamma_obs)**2)/np.var(gi_gamma_obs) - math.trunc((np.mean(gi_gamma_obs)**2)/np.var(gi_gamma_obs))))      #expected weight of "second" compartment 
+print(1-((np.mean(gi_gamma_obs)**2)/np.var(gi_gamma_obs) - math.trunc((np.mean(gi_gamma_obs)**2)/np.var(gi_gamma_obs))))      #expected weight of "second" compartment 
+
+print("lambda=", np.mean(gi_gamma_obs)/np.var(gi_gamma_obs), "\n")
+    
+    
+print("lognorm")
+print("w_j=1/n")
+print("lambda=norm_mean =",np.log(np.mean(gi_lognorm_obs))-0.5*np.log((np.std(gi_lognorm_obs)/np.mean(gi_lognorm_obs))**2+1),"\n")
+
+print("weibull")
+print("w_j=1/n")
+print("lambda=", np.std(gi_weibull_obs))
+
+
+# <br><br>
+# 
+# 
+# ---
+# 
+# ### Compate the lognormal and Weibull based on gamma's best and their best inital estimates
+
+# In[18]:
+
+
+#=================== CALCULATE WEIGHTS AND BETAS ====================
+def solver2(tau, R_0, n, dist_type):
+    '''
+    The following function returns a list of weights given the 5 inputs. 
+    
+    Inputs:
+        tau: list of generation intervals times (in days)
+        R_0: basic reproduction number
+        n: number of infectious comparments
+        
+    Output:
+        w_val: list of weights (based on minimization)
+        lambda: lambda value   (based on minimization)
+        b_val: list of betas   (based on minimization)
+    '''
+    
+    wl_0 = np.zeros(n+1)  
+    
+    if dist_type == "gamma":
+        shape = (np.mean(tau)**2)/np.var(tau) #shape of the disribution
+        w2 = shape - math.trunc(shape)        #expected weight of "second" compartment 
+        w1 = 1 - w2                           #expected weight of "first" compartment
+        comps = [math.trunc(shape)-1, math.trunc(shape)] #location of the "first" and "second" compartments where weights should exceed one
+        weights = [w1, w2]
+
+        for c, w in zip(comps,weights):
+            wl_0[c] = w
+
+        wl_0[-1]= np.mean(tau)/np.var(tau)
+    
+    
+    elif dist_type == "lognorm":
+        for i in range(n):
+            wl_0[i] = 1/n
+
+        log_mean = np.mean(tau)
+        log_std = np.std(tau)
+        norm_mean = np.log(log_mean)-0.5*np.log((log_std/log_mean)**2+1)
+        wl_0[-1]=  norm_mean
+        
+    elif dist_type == "weibull":
+        for i in range(n):
+            wl_0[i] = 1/n
+
+        wl_0[-1]= np.std(tau)
+    
+    b = (0, 1)
+    bnds=()
+    for i in range(n):
+        bnds = bnds + (b,)
+        
+    b_lamb = (0.00000000001, None)
+    bnds = bnds + (b_lamb,)
+
+    #specify constraints
+    con1 = {'type': 'eq', 'fun': constraint}
+    cons = ([con1])
+    
+    #optimize
+    solution = minimize(objective, wl_0, method='SLSQP', args=(tau), bounds=bnds,constraints=cons)
+
+    #get weights
+    w_val = solution.x[:-1]
+    lamb = solution.x[-1]
+    b_val = [weight*lamb*R_0 for weight in w_val]
+        
+    return(w_val, lamb, b_val)
+
+
+
+#==========SOLVE FOR MULTIPLE COMPARTMENTS========
+def solutions2(gi_data,min_n, max_n, R_0, dist_type):
+    
+    weight = []
+    lambda_n = []
+    beta = []
+    obj = []
+    
+    for n_val in list(range(min_n, max_n+1)):
+        if n_val == min_n: 
+            str_p = "Solving: "+ str(dist_type)+ " with R_0="+str(R_0)+" for n in "+ str(min_n)+",...,"+str(max_n)
+            print(str_p)
+            
+        w, l, b = solver2(gi_data, R_0, n_val, dist_type)
+        o = objective(list(w)+[l],gi_data)
+        
+        if n_val == int((max_n+1-min_n)/4+min_n): 
+            print("n=",str(n_val)," is done. 25% Done!")
+            
+        if n_val == int((max_n+1-min_n)/2+min_n): 
+            print("n=",str(n_val)," is done. Half way there!")
+        
+        if n_val == int(3*(max_n+1-min_n)/4 + min_n): 
+            print("n=",str(n_val)," is done. 75% Done!")
+            
+        if n_val == max_n: 
+            print("Done!")
+
+        weight.append(w)
+        lambda_n.append(l)
+        beta.append(b)
+        obj.append(o)
+    
+    return weight, lambda_n, beta, obj
+
+
+# In[19]:
+
+
+w_log_log, l_log_log, b_log_log, o_log_log = solutions2(gi_lognorm_obs, 7, 25, R0, "lognorm")
+w_weib_weib, l_weib_weib, b_weib_weib, o_weib_weib = solutions2(gi_weibull_obs, 7, 25, R0, "weibull")
+
+w_log_gamma, l_log_gamma, b_log_gamma, o_log_gamma = solutions2(gi_lognorm_obs, 7, 25, R0, "gamma")
+w_weib_gamma, l_weib_gamma, b_weib_gamma, o_weib_gamma = solutions2(gi_weibull_obs, 7, 25, R0, "gamma")
+
+
+# In[20]:
+
+
+weibull_log = list(zip([len(i) for i in w_log_log], o_log_log, o_log_gamma, o_weib_weib, o_weib_gamma))
+
+compare = pd.DataFrame(weibull_log,
+                   columns=["n","log_estimated", "log_gamma", "weib_estimated", "weib_gamma"])
+
+log_diff = pd.DataFrame(compare['log_estimated'] - compare['log_gamma'])
+weib_diff = pd.DataFrame(compare['weib_estimated'] - compare['weib_gamma'])
+
+compare.insert (3, "log_diff", log_diff)
+compare.insert (6, "weib_diff", weib_diff)
+
+
+#compare.style.bar(subset=['log_diff', 'weib_diff'], color='#d65f5f')#.bar(align=0)
+def negative(s, props=''):
+    return np.where(s < 0, props, '')
+
+
+def positive(s, props=''):
+    return np.where(s > 0, props, '')
+
+slice_ = ['log_diff', 'weib_diff']
+compare.style.apply(negative, props='color:red;', axis=0, subset=slice_).apply(positive, props='color:green;', axis=0, subset=slice_).set_properties(**{'background-color': '#FDF4CA'}, subset=slice_)
+
 
